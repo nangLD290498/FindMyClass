@@ -119,27 +119,27 @@ function Login() {
   if (query.data) return <Navigate to={query.data.nextPath} replace />;
   return (
     <div className="login-layout">
-      <section className="intro">
-        <p className="eyebrow">HÀNH TRÌNH MỚI BẮT ĐẦU TỪ ĐÂY</p>
+      <section className="intro" lang="en">
+        <p className="eyebrow">A NEW JOURNEY STARTS HERE</p>
         <h1>
-          Điều tốt đẹp
+          Good things{" "}
           <br />
-          bắt đầu từ
+          begin with{" "}
           <br />
-          <em>việc học.</em>
+          <em>learning.</em>
         </h1>
         <p className="intro-copy">
-          Chia sẻ kiến thức. Khám phá đam mê.
+          Share knowledge. Discover your passion.
           <br />
-          Cùng kết nối, học hỏi và phát triển mỗi ngày.
+          Connect, learn, and grow together every day.
         </p>
         <div className="illustration" aria-hidden="true">
           <div className="sun" />
-          <div className="book book-one">Một góc nhìn mới</div>
-          <div className="book book-two">Một tương lai tươi sáng</div>
+          <div className="book book-one">A fresh perspective</div>
+          <div className="book book-two">A brighter future</div>
           <div className="plant">✳</div>
         </div>
-        <span className="caption">DÀNH CHO NGƯỜI HAM HỌC. DÀNH CHO BẠN.</span>
+        <span className="caption">FOR THE CURIOUS. FOR YOU.</span>
       </section>
       <section className="card login-card">
         <span className="pill">CÙNG BẮT ĐẦU NÀO</span>
