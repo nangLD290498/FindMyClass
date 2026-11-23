@@ -9,7 +9,7 @@ export default defineConfig({
       ["/api", "/oauth2", "/login/oauth2"].map((path) => [
         path,
         {
-          target: "http://localhost:8080",
+          target: process.env.VITE_API_TARGET || "http://localhost:8080",
           changeOrigin: false,
         },
       ]),

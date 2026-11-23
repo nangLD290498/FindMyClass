@@ -188,4 +188,8 @@ Sessions currently live in one backend instance's memory and end when that insta
 
 ## Current implementation scope
 
-Google sign-in, session-based authentication, one-time role onboarding, basic teacher profile completion, and protected dashboard shells are implemented. Course creation, browsing, enrollment, payments, and role changes are future work.
+Google sign-in, role onboarding, teacher profiles, course management, public teacher pages, a searchable marketplace, student applications, teacher CRM with private notes/history, source analytics, and share links/QR codes are implemented. New screens use Vietnamese. The Free plan supports an optional server-enforced course limit; paid Pro is not yet available.
+
+See [MVP implementation notes](docs/IMPLEMENTATION.md) for provisional product rules, supported flows, deferred features, and validation commands. The [BRD](docs/BRD.md) remains a draft with open product questions; implementation defaults do not mark those questions as approved.
+
+Run `npm run test:fullstack` from `frontend` for the browser-to-backend workflow using an isolated H2 database and test-only simulated identities. This is separate from `npm test`, which retains the mocked authentication UI regression suite. Genuine Google sign-in and Oracle validation remain distinct checks.

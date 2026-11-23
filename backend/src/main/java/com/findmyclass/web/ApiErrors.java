@@ -10,6 +10,9 @@ public class ApiErrors {
     ResponseEntity<ProblemDetail> status(ResponseStatusException ex) {
         return ResponseEntity.status(ex.getStatusCode()).body(ProblemDetail.forStatusAndDetail(ex.getStatusCode(), ex.getReason() == null ? "Không thể hoàn tất yêu cầu." : ex.getReason()));
     }
-    @ExceptionHandler({MethodArgumentNotValidException.class, HttpMessageNotReadableException.class})
+    @ExceptionHandler({MethodArgumentNotValidException.class, HttpMessageNotReadableException.class,
+        org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
+        jakarta.validation.ConstraintViolationException.class,
+        org.springframework.web.method.annotation.HandlerMethodValidationException.class})
     ProblemDetail invalid(Exception ex) { return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Vui lòng kiểm tra thông tin đã nhập và thử lại."); }
 }

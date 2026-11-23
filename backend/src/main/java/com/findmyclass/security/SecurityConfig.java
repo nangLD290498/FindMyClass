@@ -17,6 +17,7 @@ public class SecurityConfig {
     SecurityFilterChain security(HttpSecurity http, AccountService accounts, @Value("${app.frontend-url}") String frontend) throws Exception {
         OidcUserService delegate = new OidcUserService();
         http.authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/api/auth/csrf", "/oauth2/**", "/login/**", "/error").permitAll()
                 .requestMatchers("/api/auth/me", "/api/onboarding/role", "/api/teacher/**", "/api/student/**").authenticated()
                 .anyRequest().denyAll())

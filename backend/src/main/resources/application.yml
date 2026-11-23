@@ -31,4 +31,5 @@ server:
         same-site: lax
         secure: ${SESSION_COOKIE_SECURE:true}
 app:
+  free-course-limit: ${FREE_COURSE_LIMIT:-1}
   frontend-url: ${FRONTEND_URL:http://localhost:5173}

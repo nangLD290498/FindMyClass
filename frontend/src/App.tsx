@@ -5,6 +5,20 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { api, ApiError, type Role, type User } from "./api";
+import { useUser, ErrorNotice, Loading, Retry, Protected } from "./session";
+import {
+  Marketplace,
+  CourseDetail,
+  TeacherPage,
+  TeacherCourses,
+  CourseEditor,
+  Applications,
+  TeacherAnalytics,
+  TeacherShare,
+  TeacherPlan,
+  DashboardLinks,
+} from "./Features";
+import { Link } from "react-router-dom";
 
 function ArrowIcon() {
   return (
@@ -44,35 +58,6 @@ function GoogleIcon() {
   );
 }
 
-function useUser() {
-  return useQuery({
-    queryKey: ["me"],
-    queryFn: async () => {
-      try {
-        return await api<User>("/api/auth/me");
-      } catch (error) {
-        if (error instanceof ApiError && error.status === 401) return null;
-        throw error;
-      }
-    },
-  });
-}
-
-function ErrorNotice({ error }: { error: Error | null }) {
-  const client = useQueryClient();
-  useEffect(() => {
-    if (error instanceof ApiError && error.status === 401)
-      client.setQueryData(["me"], null);
-  }, [error, client]);
-  return error ? (
-    <p className="notice error" role="alert">
-      {error instanceof ApiError
-        ? error.message
-        : "Không thể kết nối đến máy chủ. Vui lòng thử lại."}
-    </p>
-  ) : null;
-}
-
 function Frame({ children }: { children: ReactNode }) {
   const user = useUser().data;
   const client = useQueryClient();
@@ -90,6 +75,11 @@ function Frame({ children }: { children: ReactNode }) {
         <a className="brand" href="/">
           <span className="brand-icon">f.</span>FindMyClass
         </a>
+        <nav className="header-nav" aria-label="Điều hướng chính">
+          <Link to="/courses">Tìm lớp</Link>
+          {user && <Link to={user.nextPath}>Trang của tôi</Link>}
+          {!user && <Link to="/login">Đăng nhập</Link>}
+        </nav>
         {user && (
           <div className="account">
             <span>{user.displayName}</span>
@@ -122,10 +112,8 @@ function Login() {
       <section className="intro" lang="en">
         <p className="eyebrow">A NEW JOURNEY STARTS HERE</p>
         <h1>
-          Good things{" "}
-          <br />
-          begin with{" "}
-          <br />
+          Good things <br />
+          begin with <br />
           <em>learning.</em>
         </h1>
         <p className="intro-copy">
@@ -169,35 +157,6 @@ function Login() {
       </section>
     </div>
   );
-}
-
-function Loading() {
-  return (
-    <section className="center-card" role="status">
-      Đang tải…
-    </section>
-  );
-}
-function Retry({ error, retry }: { error: Error; retry: () => void }) {
-  return (
-    <section className="center-card">
-      <ErrorNotice error={error} />
-      <button className="primary" onClick={retry}>
-        Thử lại
-      </button>
-    </section>
-  );
-}
-
-function Protected({ children, path }: { children: ReactNode; path: string }) {
-  const query = useUser();
-  if (query.isPending) return <Loading />;
-  if (query.error)
-    return <Retry error={query.error} retry={() => void query.refetch()} />;
-  if (!query.data) return <Navigate to="/login" replace />;
-  if (query.data.nextPath !== path)
-    return <Navigate to={query.data.nextPath} replace />;
-  return children;
 }
 
 function ChooseRole() {
@@ -276,19 +235,45 @@ const profileSchema = z.object({
     .max(500, "Danh sách môn học không được vượt quá 500 ký tự."),
 });
 type ProfileFields = z.infer<typeof profileSchema>;
-function TeacherProfile() {
+function TeacherProfile({ editing = false }: { editing?: boolean }) {
   const client = useQueryClient();
   const form = useForm<ProfileFields>({ resolver: zodResolver(profileSchema) });
+  const existing = useQuery({
+    queryKey: ["profile-edit"],
+    queryFn: () =>
+      api<{ bio: string; subjects: string }>(
+        "/api/public/teachers/" + client.getQueryData<User>(["me"])!.id,
+      ),
+    enabled: editing,
+  });
+  useEffect(() => {
+    if (existing.data && !form.formState.isDirty)
+      form.reset({ bio: existing.data.bio, subjects: existing.data.subjects });
+  }, [existing.data, form]);
   const mutation = useMutation({
     mutationFn: (fields: ProfileFields) =>
       api<User>("/api/teacher/profile", {
         method: "PUT",
         body: JSON.stringify(fields),
       }),
-    onSuccess: (user) => client.setQueryData(["me"], user),
+    onSuccess: (user) => {
+      client.setQueryData(["me"], user);
+      if (editing) window.location.assign("/teacher/share");
+    },
   });
+  if (editing && existing.isPending) return <Loading />;
+  if (editing && existing.error)
+    return (
+      <Retry error={existing.error} retry={() => void existing.refetch()} />
+    );
   return (
     <section className="center-card profile-card">
+      {editing && (
+        <>
+          <Link to="/teacher/share">← Trang tuyển sinh</Link>
+          <ErrorNotice error={existing.error} />
+        </>
+      )}
       <p className="eyebrow">GIỚI THIỆU BẢN THÂN</p>
       <h1>Chia sẻ câu chuyện của bạn.</h1>
       <p>Hoàn thiện hồ sơ để bắt đầu hành trình giảng dạy của bạn.</p>
@@ -320,7 +305,11 @@ function TeacherProfile() {
         </p>
         <ErrorNotice error={mutation.error} />
         <button className="primary" disabled={mutation.isPending}>
-          {mutation.isPending ? "Đang lưu hồ sơ…" : "Hoàn tất hồ sơ"}
+          {mutation.isPending
+            ? "Đang lưu hồ sơ…"
+            : editing
+              ? "Lưu hồ sơ"
+              : "Hoàn tất hồ sơ"}
         </button>
       </form>
     </section>
@@ -329,6 +318,14 @@ function TeacherProfile() {
 
 function Dashboard({ role }: { role: "teacher" | "student" }) {
   const user = useUser().data!;
+  useEffect(() => {
+    if (role !== "student") return;
+    const pending = sessionStorage.getItem("pending-course");
+    if (pending && /^\d+(\?utm_source=[^#]*)?$/.test(pending)) {
+      sessionStorage.removeItem("pending-course");
+      window.location.assign("/courses/" + pending);
+    }
+  }, [role]);
   const query = useQuery({
     queryKey: ["dashboard", role],
     queryFn: () => api<{ message: string }>(`/api/${role}/dashboard`),
@@ -343,19 +340,8 @@ function Dashboard({ role }: { role: "teacher" | "student" }) {
       </span>
       <h1>Xin chào, {user.displayName}!</h1>
       <p>{query.data.message}</p>
-      <div className="empty-state">
-        <span aria-hidden="true">✳</span>
-        <h2>
-          {role === "teacher"
-            ? "Hành trình giảng dạy bắt đầu từ đây."
-            : "Sẵn sàng khám phá kiến thức mới."}
-        </h2>
-        <p>
-          {role === "teacher"
-            ? "Tính năng tạo khóa học sẽ được bổ sung trong bản cập nhật sắp tới."
-            : "Tính năng tìm kiếm và đăng ký khóa học sẽ được bổ sung trong bản cập nhật sắp tới."}
-        </p>
-      </div>
+      <DashboardLinks role={role} />
+      <p>Chọn một mục phía trên để bắt đầu.</p>
     </section>
   );
 }
@@ -365,12 +351,87 @@ function Landing() {
   if (query.isPending) return <Loading />;
   if (query.error)
     return <Retry error={query.error} retry={() => void query.refetch()} />;
-  return <Navigate to={query.data?.nextPath ?? "/login"} replace />;
+  return <Navigate to={query.data?.nextPath ?? "/courses"} replace />;
 }
 export function App() {
   return (
     <Frame>
       <Routes>
+        <Route path="/courses" element={<Marketplace />} />
+        <Route path="/courses/:id" element={<CourseDetail />} />
+        <Route path="/teachers/:id" element={<TeacherPage />} />
+        <Route
+          path="/teacher/courses"
+          element={
+            <Protected path="/teacher">
+              <TeacherCourses />
+            </Protected>
+          }
+        />
+        <Route
+          path="/teacher/courses/new"
+          element={
+            <Protected path="/teacher">
+              <CourseEditor />
+            </Protected>
+          }
+        />
+        <Route
+          path="/teacher/courses/:id/edit"
+          element={
+            <Protected path="/teacher">
+              <CourseEditor />
+            </Protected>
+          }
+        />
+        <Route
+          path="/teacher/applications"
+          element={
+            <Protected path="/teacher">
+              <Applications teacher />
+            </Protected>
+          }
+        />
+        <Route
+          path="/teacher/analytics"
+          element={
+            <Protected path="/teacher">
+              <TeacherAnalytics />
+            </Protected>
+          }
+        />
+        <Route
+          path="/teacher/share"
+          element={
+            <Protected path="/teacher">
+              <TeacherShare />
+            </Protected>
+          }
+        />
+        <Route
+          path="/teacher/plan"
+          element={
+            <Protected path="/teacher">
+              <TeacherPlan />
+            </Protected>
+          }
+        />
+        <Route
+          path="/teacher/profile/edit"
+          element={
+            <Protected path="/teacher">
+              <TeacherProfile editing />
+            </Protected>
+          }
+        />
+        <Route
+          path="/student/applications"
+          element={
+            <Protected path="/student">
+              <Applications />
+            </Protected>
+          }
+        />
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<Landing />} />
         <Route
