@@ -99,9 +99,9 @@ class AuthFlowTest {
     }
     @Test void subjectIdentifiesAccountsRatherThanEmail() {
         accounts.signIn("one", "same@example.com", "One");
-        accounts.signIn("two", "same@example.com", "Two");
+        accounts.signIn("ONE", "same@example.com", "Two");
         assertThat(repository.count()).isEqualTo(2);
-        assertThat(accounts.current("one").id()).isNotEqualTo(accounts.current("two").id());
+        assertThat(accounts.current("one").id()).isNotEqualTo(accounts.current("ONE").id());
     }
     @Test void concurrentRoleChoicesHaveOnlyOneWinner() throws Exception {
         newUser("race");

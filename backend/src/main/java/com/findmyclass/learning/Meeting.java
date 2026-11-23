@@ -1,22 +1,18 @@
 package com.findmyclass.learning;
 
 import jakarta.persistence.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "course_meetings")
 public class Meeting {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @JdbcTypeCode(SqlTypes.NUMERIC)
   Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "course_id", nullable = false)
   Course course;
 
-  @JdbcTypeCode(SqlTypes.NUMERIC)
   @Column(nullable = false)
   int weekday;
 

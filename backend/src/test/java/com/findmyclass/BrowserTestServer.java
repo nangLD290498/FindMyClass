@@ -30,7 +30,7 @@ public class BrowserTestServer {
     app.run(
         "--server.address=127.0.0.1",
         "--server.port=8081",
-        "--spring.datasource.url=jdbc:h2:mem:browser;MODE=Oracle;DB_CLOSE_DELAY=-1");
+        "--spring.datasource.url=jdbc:h2:mem:browser;MODE=MySQL;DB_CLOSE_DELAY=-1");
   }
 
   @TestConfiguration

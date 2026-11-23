@@ -19,14 +19,12 @@ public class Enrollment {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @JdbcTypeCode(SqlTypes.NUMERIC)
   Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "course_id", nullable = false)
   Course course;
 
-  @JdbcTypeCode(SqlTypes.NUMERIC)
   @Column(name = "student_id", nullable = false)
   Long studentId;
 
@@ -40,6 +38,7 @@ public class Enrollment {
   String source;
 
   @Enumerated(EnumType.STRING)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
   @Column(nullable = false, length = 16)
   Status status = Status.NEW;
 

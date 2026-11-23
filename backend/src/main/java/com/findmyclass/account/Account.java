@@ -5,7 +5,7 @@ import org.hibernate.type.SqlTypes;
 @Entity
 @Table(name = "app_users")
 public class Account {
-    @Id @JdbcTypeCode(SqlTypes.NUMERIC) @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @Column(name = "google_subject", nullable = false, unique = true, length = 255)
     private String googleSubject;
@@ -13,7 +13,7 @@ public class Account {
     private String email;
     @Column(name = "display_name", nullable = false, length = 255)
     private String displayName;
-    @Enumerated(EnumType.STRING) @Column(length = 16)
+    @Enumerated(EnumType.STRING) @JdbcTypeCode(SqlTypes.VARCHAR) @Column(length = 16)
     private Role role;
     protected Account() {}
     public Account(String googleSubject, String email, String displayName) {

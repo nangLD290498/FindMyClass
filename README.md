@@ -35,7 +35,7 @@ The first version will support two roles: **teacher** and **student**.
 
 - Frontend: React, TypeScript, Vite, React Router, TanStack Query, React Hook Form, and Zod.
 - Backend: Java 21, Spring Boot, Spring Security OAuth2/OIDC, and Spring Data JPA.
-- Database: Oracle, with Flyway migrations. Automated backend tests use H2 by default and can also run against a dedicated Oracle schema.
+- Database: MySQL 8.0.17 or later, with Flyway migrations. Automated backend tests use H2 by default and can also run against a dedicated MySQL database.
 
 ## Google sign-in and onboarding
 
@@ -54,46 +54,19 @@ Roles and profile completion are enforced by the backend using database records.
 
 - A **JDK 21**, including `javac`, with `JAVA_HOME` pointing to it.
 - Node.js 24 and npm.
-- An accessible Oracle database (for example, Oracle Database Free) and a dedicated schema user with session/table/sequence creation permissions and a tablespace quota. Flyway creates the application's tables in that schema. Do not use a shared production schema for development.
+- A running MySQL server and a dedicated development database and user.
 - A Google Cloud OAuth client of type **Web application**.
 
-### Local Oracle database
+### Local MySQL database
 
-Docker can run a development-only Oracle Database Free instance in this environment or on your machine. The helper uses the community-maintained `gvenzl/oracle-free:23-slim` image and records its resolved digest on first setup. Docker verifies image layer checksums during download.
+Connect to MySQL using an administrator account. Run the following statements with your own development password. Flyway creates the application's tables at startup.
 
-From the repository root:
-
-```bash
-python3 scripts/oracle_dev.py start
-python3 scripts/oracle_dev.py status
+```sql
+CREATE DATABASE findmyclass CHARACTER SET utf8mb4;
+CREATE USER 'findmyclass'@'localhost' IDENTIFIED BY 'your-dev-password';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES
+    ON findmyclass.* TO 'findmyclass'@'localhost';
 ```
-
-Wait until health is `healthy`. The first startup downloads the image and initializes the database, which can take several minutes. The database listens only on local port **1521**, with service **FREEPDB1**. The application schema is `findmyclass`.
-
-Passwords are generated locally and stored in the ignored `.local/oracle/` directory with restricted permissions. The helper injects credentials into child processes without printing them. Keep this directory alongside the Docker volume; do not commit it or delete it while retaining the database. The database files persist in Docker volume `findmyclass-oracle-data` across container restarts.
-
-After configuring Google OAuth variables and local HTTP cookie settings, launch the backend with the generated database credentials:
-
-```bash
-python3 scripts/oracle_dev.py run -- ./backend/mvnw -f backend/pom.xml spring-boot:run
-```
-
-To run the existing backend integration suite against Oracle, initialize a separate test schema and use the helper's `test` command:
-
-```bash
-python3 scripts/oracle_dev.py init-tests
-python3 scripts/oracle_dev.py test -- ./backend/mvnw -f backend/pom.xml verify
-```
-
-This overrides the test datasource to use `findmyclass_test`, while retaining simulated Google identities. The suite clears records in that test schema. Never point it at a schema containing application data. Ordinary `./mvnw verify` still uses H2.
-
-To stop the database while retaining its data:
-
-```bash
-python3 scripts/oracle_dev.py stop
-```
-
-Run `start` again to restart the existing container. If the environment is recreated without its Docker volume, the database must be recreated; the helper does not provide remote backups.
 
 ### Configure Google
 
@@ -113,8 +86,8 @@ Use `backend/.env.example` as a list of required variables. Supply their values 
 
 | Variable | Purpose |
 |---|---|
-| `DB_URL` | Oracle JDBC URL, such as `jdbc:oracle:thin:@localhost:1521/FREEPDB1` |
-| `DB_USERNAME` | Dedicated application schema user |
+| `DB_URL` | MySQL JDBC URL, such as `jdbc:mysql://127.0.0.1:3306/findmyclass` |
+| `DB_USERNAME` | Dedicated application database user |
 | `DB_PASSWORD` | Database password |
 | `GOOGLE_CLIENT_ID` | Google web OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret; backend only |
@@ -128,7 +101,7 @@ cd backend
 ./mvnw spring-boot:run
 ```
 
-Flyway applies the schema migration at startup; Hibernate validates the schema instead of modifying it. Database connections and Google network requests must be allowed by your environment. Google sign-in requires access to `accounts.google.com`, `oauth2.googleapis.com`, `openidconnect.googleapis.com`, and `www.googleapis.com`. Oracle JDBC also needs a supported network route to your database host and port; an HTTP allowlist alone does not provide JDBC connectivity.
+Flyway applies the schema migrations at startup. Hibernate validates the schema. Google sign-in requires access to `accounts.google.com`, `oauth2.googleapis.com`, `openidconnect.googleapis.com`, and `www.googleapis.com`.
 
 ### Start the frontend
 
@@ -159,12 +132,14 @@ All mutation requests require the CSRF header returned by `/api/auth/csrf`. Fetc
 
 ### Tests and build
 
-Backend tests use test-only Google client values, simulated OIDC principals, and H2 in Oracle compatibility mode. They do not require real OAuth or database credentials:
+Backend tests use test-only Google client values, simulated OIDC principals, and H2 in MySQL compatibility mode. Run the default suite with:
 
 ```bash
 cd backend
 ./mvnw verify
 ```
+
+To verify against MySQL, provision a separate database and user following the development setup above. Set `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD` for that test database, then run the same command. The suite clears records in the selected test database.
 
 Frontend browser tests mock API responses to exercise UI behavior, including teacher/student onboarding, returning users, session expiration, errors, logout, and mobile layout:
 
@@ -178,7 +153,7 @@ npm test
 
 If Chromium is already installed, use `CHROMIUM_PATH=/path/to/chromium npm test` instead of downloading a browser.
 
-The default H2 tests and mocked browser tests do not establish compatibility with Oracle or complete a real Google login. Use the Oracle test command above to validate the migrations and integration suite against Oracle. Before deploying, also manually sign in with new teacher/student Google accounts, reload, sign out, and sign in again to verify the full OAuth flow.
+The MySQL test setup validates the migrations and integration suite against MySQL. To verify the full OAuth flow before deploying, manually sign in with new teacher and student Google accounts, reload, sign out, and sign in again.
 
 ### Deployment notes
 
@@ -192,4 +167,4 @@ Google sign-in, role onboarding, teacher profiles, course management, public tea
 
 See [MVP implementation notes](docs/IMPLEMENTATION.md) for provisional product rules, supported flows, deferred features, and validation commands. The [BRD](docs/BRD.md) remains a draft with open product questions; implementation defaults do not mark those questions as approved.
 
-Run `npm run test:fullstack` from `frontend` for the browser-to-backend workflow using an isolated H2 database and test-only simulated identities. This is separate from `npm test`, which retains the mocked authentication UI regression suite. Genuine Google sign-in and Oracle validation remain distinct checks.
+Run `npm run test:fullstack` from `frontend` for the browser-to-backend workflow using an isolated H2 database and test-only simulated identities. Run `npm test` for the mocked authentication UI suite. Use the dedicated MySQL test setup above to validate MySQL migrations and manually sign in to check Google OAuth.

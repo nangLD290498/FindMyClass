@@ -188,7 +188,7 @@ The following are proposals for an MVP that can be piloted with real users; quan
 
 ## 11. Constraints, Dependencies, and Risks
 
-- **Existing platform:** React/TypeScript, Spring Boot/Java 21, Oracle. This is the repository's stack; reuse is proposed, and no stack replacement has been requested.
+- **Existing platform:** React/TypeScript, Spring Boot/Java 21, and MySQL.
 - **Current system:** the README describes Google sign-in, role selection, teacher profiles, and basic dashboards. New feature groups in this BRD are not considered implemented merely because they appear in the document.
 - **External dependencies:** correct Google OAuth configuration and environment-specific redirect URIs; database and hosting; notification/payment providers only if selected for the MVP.
 - **Content quality:** impersonation, incorrect class information, and teacher verification need an accountable policy owner, not just UI handling.

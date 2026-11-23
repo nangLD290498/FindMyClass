@@ -24,18 +24,15 @@ public class Course {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @JdbcTypeCode(SqlTypes.NUMERIC)
   Long id;
 
-  @JdbcTypeCode(SqlTypes.NUMERIC)
   @Column(name = "teacher_id", nullable = false)
   Long teacherId;
 
   @Column(nullable = false, length = 160)
   String title;
 
-  @Lob
-  @Column(nullable = false)
+  @Column(nullable = false, length = 4000)
   String description;
 
   @Column(nullable = false, length = 100)
@@ -51,25 +48,24 @@ public class Course {
   String location;
 
   @Enumerated(EnumType.STRING)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
   @Column(name = "delivery_mode", nullable = false, length = 16)
   Mode mode;
 
   @Column(nullable = false, precision = 14, scale = 2)
   BigDecimal tuition;
 
-  @JdbcTypeCode(SqlTypes.NUMERIC)
   @Column(nullable = false)
   int capacity;
 
-  @JdbcTypeCode(SqlTypes.TIMESTAMP)
   @Column(name = "start_date", nullable = false)
   LocalDate startDate;
 
-  @JdbcTypeCode(SqlTypes.TIMESTAMP)
   @Column(name = "end_date", nullable = false)
   LocalDate endDate;
 
   @Enumerated(EnumType.STRING)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
   @Column(nullable = false, length = 16)
   Status status = Status.DRAFT;
 
